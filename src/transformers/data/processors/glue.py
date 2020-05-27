@@ -24,7 +24,6 @@ from ...file_utils import is_tf_available
 from ...tokenization_utils import PreTrainedTokenizer
 from .utils import DataProcessor, InputExample, InputFeatures
 
-
 if is_tf_available():
     import tensorflow as tf
 
@@ -32,12 +31,12 @@ logger = logging.getLogger(__name__)
 
 
 def glue_convert_examples_to_features(
-    examples: Union[List[InputExample], "tf.data.Dataset"],
-    tokenizer: PreTrainedTokenizer,
-    max_length: Optional[int] = None,
-    task=None,
-    label_list=None,
-    output_mode=None,
+        examples: Union[List[InputExample], "tf.data.Dataset"],
+        tokenizer: PreTrainedTokenizer,
+        max_length: Optional[int] = None,
+        task=None,
+        label_list=None,
+        output_mode=None,
 ):
     """
     Loads a data file into a list of ``InputFeatures``
@@ -68,7 +67,7 @@ def glue_convert_examples_to_features(
 if is_tf_available():
 
     def _tf_glue_convert_examples_to_features(
-        examples: tf.data.Dataset, tokenizer: PreTrainedTokenizer, task=str, max_length: Optional[int] = None,
+            examples: tf.data.Dataset, tokenizer: PreTrainedTokenizer, task=str, max_length: Optional[int] = None,
     ) -> tf.data.Dataset:
         """
         Returns:
@@ -105,12 +104,12 @@ if is_tf_available():
 
 
 def _glue_convert_examples_to_features(
-    examples: List[InputExample],
-    tokenizer: PreTrainedTokenizer,
-    max_length: Optional[int] = None,
-    task=None,
-    label_list=None,
-    output_mode=None,
+        examples: List[InputExample],
+        tokenizer: PreTrainedTokenizer,
+        max_length: Optional[int] = None,
+        task=None,
+        label_list=None,
+        output_mode=None,
 ):
     if max_length is None:
         max_length = tokenizer.max_len
@@ -297,6 +296,49 @@ class ColaProcessor(DataProcessor):
             guid = "%s-%s" % (set_type, i)
             text_a = line[text_index]
             label = None if test_mode else line[1]
+            examples.append(InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
+        return examples
+
+
+class GarbledSentsProcessor(DataProcessor):
+    """Processor for the GarbledSents data set."""
+
+    def get_example_from_tensor_dict(self, tensor_dict):
+        """See base class."""
+        return InputExample(
+            tensor_dict["idx"].numpy(),
+            tensor_dict["sentence"].numpy().decode("utf-8"),
+            None,
+            str(tensor_dict["label"].numpy()),
+        )
+
+    def get_train_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+
+    def get_dev_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+
+    def get_test_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_tsv(os.path.join(data_dir, "test.tsv")), "test")
+
+    def get_labels(self):
+        """See base class."""
+        return ["0", "1"]
+
+    def _create_examples(self, lines, set_type):
+        """Creates examples for the training, dev and test sets."""
+        test_mode = set_type == "test"
+        text_index = 0
+        examples = []
+        for (i, line) in enumerate(lines):
+            if i <= 0:
+                continue
+            guid = "%s-%s" % (set_type, i)
+            text_a = line[text_index]
+            label = line[1]
             examples.append(InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
         return examples
 
@@ -560,6 +602,7 @@ class WnliProcessor(DataProcessor):
 
 glue_tasks_num_labels = {
     "cola": 2,
+    "garbledsents": 2,
     "mnli": 3,
     "mrpc": 2,
     "sst-2": 2,
@@ -572,6 +615,7 @@ glue_tasks_num_labels = {
 
 glue_processors = {
     "cola": ColaProcessor,
+    "garbledsents": GarbledSentsProcessor,
     "mnli": MnliProcessor,
     "mnli-mm": MnliMismatchedProcessor,
     "mrpc": MrpcProcessor,
@@ -585,6 +629,7 @@ glue_processors = {
 
 glue_output_modes = {
     "cola": "classification",
+    "garbledsents": "classification",
     "mnli": "classification",
     "mnli-mm": "classification",
     "mrpc": "classification",
