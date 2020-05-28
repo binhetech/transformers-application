@@ -6,6 +6,8 @@ python ../examples/text-classification/run_glue.py \
     --task_name garbledsents \
     --do_train True \
     --do_eval True \
+    --evaluate_during_training True \
+    --overwrite_output_dir True \
     --do_test False \
     --data_dir $GLUE_DIR/$TASK_NAME \
     --max_seq_length 128 \
@@ -13,6 +15,6 @@ python ../examples/text-classification/run_glue.py \
     --per_gpu_eval_batch_size=64   \
     --per_gpu_test_batch_size=64   \
     --learning_rate 2e-5 \
-    --num_train_epochs 3.0 \
+    --num_train_epochs 6 \
     --n_gpu 2 \
     --output_dir ../output/$TASK_NAME/
